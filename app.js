@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
 const pool = require('./db');
 require('dotenv').config();
 
@@ -73,6 +74,45 @@ app.post('/produtos/consultar', async (req, res) => {
     res.status(500).json({
       erro: 'Erro ao consultar produtos.',
       detalhe: error.message
+    });
+  }
+});
+
+app.post('/tp/processar', async (req, res) => {
+  try {
+    const dados = req.body;
+
+    if (
+      dados.tensaoMaxima == null ||
+      dados.awgPrimario == null ||
+      dados.espirasPrimario == null ||
+      dados.awgSecundario == null ||
+      dados.espirasSecundario == null ||
+      dados.carretel == null ||
+      !Array.isArray(dados.insumos)
+    ) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: 'Payload invalido. Verifique os campos obrigatorios.'
+      });
+    }
+
+    const response = await axios.post(
+      process.env.CALC_API_URL,
+      dados
+    );
+
+    return res.json({
+      sucesso: response.data.sucesso,
+      mensagem: response.data.mensagem,
+      custoTotal: response.data.custoTotal
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      sucesso: false,
+      mensagem: 'Erro no calculo.',
+      detalhe: error.response?.data || error.message
     });
   }
 });
