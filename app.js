@@ -1,6 +1,6 @@
+const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const pool = require('./db');
 require('dotenv').config();
 
@@ -82,25 +82,15 @@ app.post('/tp/processar', async (req, res) => {
   try {
     const dados = req.body;
 
-    if (
-      dados.tensaoMaxima == null ||
-      dados.awgPrimario == null ||
-      dados.espirasPrimario == null ||
-      dados.awgSecundario == null ||
-      dados.espirasSecundario == null ||
-      dados.carretel == null ||
-      !Array.isArray(dados.insumos)
-    ) {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: 'Payload invalido. Verifique os campos obrigatorios.'
-      });
-    }
+    console.log("Recebido:", dados);
 
     const response = await axios.post(
       process.env.CALC_API_URL,
-      dados
+      dados,
+      { timeout: 20000 }
     );
+
+    console.log("Resposta API custo:", response.data);
 
     return res.json({
       sucesso: response.data.sucesso,
@@ -109,10 +99,12 @@ app.post('/tp/processar', async (req, res) => {
     });
 
   } catch (error) {
+    console.error("ERRO:", error.code || error.message);
+
     return res.status(400).json({
       sucesso: false,
-      mensagem: 'Erro no calculo.',
-      detalhe: error.response?.data || error.message
+      mensagem: "Erro no calculo (timeout ou API indisponivel)",
+      detalhe: error.code || error.message
     });
   }
 });
